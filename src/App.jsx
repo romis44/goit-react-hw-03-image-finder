@@ -1,4 +1,12 @@
 import { Component } from 'react';
+import fetchApi from 'components/API';
+import Searchbar from 'components/Searchbar/Searchbar';
+import { Layout } from 'App.styled';
+import ImageGallery from './components/ImageGallery/ImageGallery';
+import Loader from './components/Loader/Loader';
+import Button from './components/Button/Button';
+import Modal from './components/Modal/Modal';
+import { toast, Toaster } from 'react-hot-toast';
 
 export default class App extends Component {
   state = {
@@ -13,4 +21,117 @@ export default class App extends Component {
     showModal: false,
     error: null,
   };
+
+  componentDidUpdate(prevProps, prevState) {
+    const { query, page } = this.state;
+
+    if (prevState.query !== query) {
+      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+      fetchApi(query)
+        .then(({ hits, totalHits }) => {
+          const array = hits.map(hit => ({
+            id: hit.id,
+            tag: hit.tags,
+            smallImage: hit.webformatURL,
+            largeImage: hit.largeImageURL,
+          }));
+          if (!totalHits) {
+            toast.error(`Sorry,but there is not any data for ${query}`);
+          }
+          return this.setState({
+            page: 1,
+            images: array,
+            imagesOnPage: array.length,
+            totalImages: totalHits,
+          });
+        })
+        .catch(error => this.setState({ error }))
+        .finally(() =>
+          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
+        );
+    }
+    if (prevState.page !== page && page !== 1) {
+      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+
+      fetchApi(query, page)
+        .then(({ hits }) => {
+          const array = hits.map(hit => ({
+            id: hit.id,
+            tag: hit.tags,
+            smallImage: hit.webformatURL,
+            largeImage: hit.largeImageURL,
+          }));
+
+          return this.setState(({ images, imagesOnPage }) => {
+            return {
+              images: [...images, ...array],
+              imagesOnPage: array.length + imagesOnPage,
+            };
+          });
+        })
+        .catch(error => this.setState({ error }))
+        .finally(() =>
+          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
+        );
+    }
+  }
+  getResult = query => {
+    this.setState({ query });
+  };
+
+  onLoadMore = () => {
+    this.setState(({ page }) => ({ page: page + 1 }));
+  };
+
+  onToggleModal = () => {
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  };
+
+  onOpenModal = event => {
+    const currentImageUrl = event.target.dataset.large;
+    const currentImageTag = event.target.alt;
+
+    if (event.target.nodeName === 'IMG') {
+      this.setState(({ showModal }) => ({
+        showModal: !showModal,
+        currentImageUrl: currentImageUrl,
+        currentImageTag: currentImageTag,
+      }));
+    }
+  };
+
+  render() {
+    const {
+      images,
+      imagesOnPage,
+      totalImages,
+      currentImageUrl,
+      currentImageTag,
+      isLoading,
+      showModal,
+    } = this.state;
+
+    const getResult = this.getResult;
+    const onLoadMore = this.onLoadMore;
+    const onOpenModal = this.onOpenModal;
+    const onToggleModal = this.onToggleModal;
+    return (
+      <Layout>
+        <Toaster position="top-right" toastOptions={{ duration: 1500 }} />
+        <Searchbar onSearch={getResult} />
+        {isLoading && <Loader />}
+        {images && <ImageGallery images={images} openModal={onOpenModal} />}
+        {imagesOnPage >= 12 && imagesOnPage < totalImages && (
+          <Button onLoadMore={onLoadMore} />
+        )}
+        {showModal && (
+          <Modal
+            onClose={onToggleModal}
+            currentImageUrl={currentImageUrl}
+            currentImageTag={currentImageTag}
+          />
+        )}
+      </Layout>
+    );
+  }
 }
