@@ -23,11 +23,11 @@ export default class App extends Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const { query } = this.state;
+    const { query, page } = this.state;
 
-    if (prevState.query !== query) {
+    if (prevState.query !== query || prevState.page !== page) {
       this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
-      fetchApi(query)
+      fetchApi(query, page)
         .then(({ hits, totalHits }) => {
           const array = hits.map(hit => ({
             id: hit.id,
@@ -53,23 +53,6 @@ export default class App extends Component {
           this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
         );
     }
-    // if (prevState.page !== page && page !== 1) {
-    //   this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
-
-    //   fetchApi(query, page)
-    //     .then(({ hits }) => {
-    //       const array = hits.map(hit => ({
-    //         id: hit.id,
-    //         tag: hit.tags,
-    //         smallImage: hit.webformatURL,
-    //         largeImage: hit.largeImageURL,
-    //       }));
-    //     })
-    //     .catch(error => this.setState({ error }))
-    //     .finally(() =>
-    //       this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
-    //     );
-    // }
   }
 
   getResult = query => {
@@ -77,6 +60,7 @@ export default class App extends Component {
       query,
       page: 1,
       images: [],
+      imagesOnPage: 0,
     });
   };
 
