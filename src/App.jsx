@@ -23,7 +23,7 @@ export default class App extends Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
+    const { query } = this.state;
 
     if (prevState.query !== query) {
       this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
@@ -35,37 +35,16 @@ export default class App extends Component {
             smallImage: hit.webformatURL,
             largeImage: hit.largeImageURL,
           }));
+
           if (!totalHits) {
             toast.error(`Sorry,but there is not any data for ${query}`);
           }
-          return this.setState({
-            page: 1,
-            images: array,
-            imagesOnPage: array.length,
-            totalImages: totalHits,
-          });
-        })
-        .catch(error => this.setState({ error }))
-        .finally(() =>
-          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
-        );
-    }
-    if (prevState.page !== page && page !== 1) {
-      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
-
-      fetchApi(query, page)
-        .then(({ hits }) => {
-          const array = hits.map(hit => ({
-            id: hit.id,
-            tag: hit.tags,
-            smallImage: hit.webformatURL,
-            largeImage: hit.largeImageURL,
-          }));
 
           return this.setState(({ images, imagesOnPage }) => {
             return {
               images: [...images, ...array],
               imagesOnPage: array.length + imagesOnPage,
+              totalImages: totalHits,
             };
           });
         })
@@ -74,9 +53,31 @@ export default class App extends Component {
           this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
         );
     }
+    // if (prevState.page !== page && page !== 1) {
+    //   this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+
+    //   fetchApi(query, page)
+    //     .then(({ hits }) => {
+    //       const array = hits.map(hit => ({
+    //         id: hit.id,
+    //         tag: hit.tags,
+    //         smallImage: hit.webformatURL,
+    //         largeImage: hit.largeImageURL,
+    //       }));
+    //     })
+    //     .catch(error => this.setState({ error }))
+    //     .finally(() =>
+    //       this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
+    //     );
+    // }
   }
+
   getResult = query => {
-    this.setState({ query });
+    this.setState({
+      query,
+      page: 1,
+      images: [],
+    });
   };
 
   onLoadMore = () => {
@@ -91,13 +92,11 @@ export default class App extends Component {
     const currentImageUrl = event.target.dataset.large;
     const currentImageTag = event.target.alt;
 
-    if (event.target.nodeName === 'IMG') {
-      this.setState(({ showModal }) => ({
-        showModal: !showModal,
-        currentImageUrl: currentImageUrl,
-        currentImageTag: currentImageTag,
-      }));
-    }
+    this.setState(({ showModal }) => ({
+      showModal: !showModal,
+      currentImageUrl: currentImageUrl,
+      currentImageTag: currentImageTag,
+    }));
   };
 
   render() {
@@ -115,6 +114,7 @@ export default class App extends Component {
     const onLoadMore = this.onLoadMore;
     const onOpenModal = this.onOpenModal;
     const onToggleModal = this.onToggleModal;
+
     return (
       <Layout>
         <Toaster position="top-right" toastOptions={{ duration: 1500 }} />
